@@ -162,3 +162,8 @@ int main()
 		cout << endl;
 	}
 }
+
+void TT()
+{
+
+}
