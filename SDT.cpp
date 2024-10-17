@@ -4,27 +4,26 @@
 #include <regex>
 #include <fstream>
 #include <Windows.h>
-#include <locale>
-
-//Для .json файлов
-#include <nlohmann/json.hpp>
-
 using namespace std;
 
-using json = nlohmann::json;
 
 map<string, vector<string>> endings;
 
-void parse_json()
+void initialize_map()
 {
-	ifstream ifs(R"(endings.json)");
-	if (ifs.is_open())
+	
+	ifstream in("endings.txt");
+	string line;
+	if (in.is_open())
 	{
-		json Doc{ json::parse(ifs) };
-		Doc.get_to(endings);
+		while (getline(in, line)) 
+		{
+			endings.insert(pair<string, vector<string>>(line, {}));
+		}
 	}
-	ifs.close();
+	in.close();
 }
+
 
 //функция избавления от знаков препинания в строке
 vector<string> parse_line(string line)
@@ -34,7 +33,7 @@ vector<string> parse_line(string line)
 
 	for (int i = 0; i < line.size(); i++)
 	{
-		if (((line[i] >= 'А') and (line[i] <= 'Я')) or ((line[i] >= 'а') and (line[i] <= 'я')))
+		if (((line[i] >= -64) && (line[i] <= -33)) || ((line[i] >= -32) && (line[i] <= -1)))
 		{
 			word += line[i];
 		}
@@ -47,6 +46,11 @@ vector<string> parse_line(string line)
 			word = "";
 		}
 	}
+
+	/*for (int i = 0; i < clean_words.size(); i++)
+	{
+		cout << clean_words[i] << endl;
+	}*/
 	return clean_words;
 
 }
@@ -72,6 +76,7 @@ void parse_word(vector<string> words)
 		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
 		{
 			string current_key = iterator->first;
+			//cout << "CURRENT " << current_key << endl;
 			if ((current_word.size() > 1) && (current_word.size() >= current_key.size()))
 			{
 				if (current_word.substr(current_word.size() - current_key.size()) == current_key)
@@ -95,16 +100,12 @@ void parse_word(vector<string> words)
 //добавить что глаголы не = 1 букве 
 int main()
 {
+
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
 	setlocale(LC_ALL, "");
 
-	//Для корректного считывания русского языка из файла
-	locale::global(std::locale{ ".UTF-8" }); // inform standard library application logic uses UTF-8
-	cout.imbue(std::locale("")); // use system locale to select output encoding
-
-	parse_json();
-
+	initialize_map();
 	string line;
 
 	ifstream in("test.txt");
@@ -114,6 +115,7 @@ int main()
 		{
 			//"чистка" строки от пробелов и знаков препинания (только слова на русском языке)
 			vector<string> output = parse_line(line); 
+
 			//добавление в словарь
 			parse_word(output);
 		}
