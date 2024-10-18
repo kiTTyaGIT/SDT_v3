@@ -133,8 +133,3 @@ int main()
 		cout << endl << endl;
 	}
 }
-
-void TT()
-{
-
-}
