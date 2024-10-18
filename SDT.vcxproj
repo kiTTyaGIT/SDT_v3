@@ -133,9 +133,6 @@
   <ItemGroup>
     <ClCompile Include="SDT.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="endings.json" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
