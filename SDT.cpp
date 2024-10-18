@@ -4,82 +4,26 @@
 #include <regex>
 #include <fstream>
 #include <Windows.h>
-
 using namespace std;
 
-map<string, vector<string>> endings
+
+map<string, vector<string>> endings;
+
+void initialize_map()
 {
+	
+	ifstream in("endings.txt");
+	string line;
+	if (in.is_open())
+	{
+		while (getline(in, line)) 
+		{
+			endings.insert(pair<string, vector<string>>(line, {}));
+		}
+	}
+	in.close();
+}
 
-	//+сь
-	{"у", {}},
-
-	{"ть", {}},
-	{"ться", {}},
-	{"тся", {}},
-
-	//+сь
-	{"ю", {}},
-	{"ую", {}},
-	{"ою", {}},
-	{"ею", {}},
-	{"аю", {}},
-
-	//+ся
-	{"ем", {}},
-	{"ём", {}},
-	{"им", {}},
-
-	//+ся
-	{"ешь", {}},
-	{"ёшь", {}},
-	{"ишь", {}},
-
-	//сь
-	{"ете", {}},
-	{"ёте", {}},
-	{"ите", {}},
-
-	//+ся
-	{"ет", {}},
-	{"ёт", {}},
-	{"ит", {}},
-
-	//+ся
-	{"ат", {}},
-	{"ят", {}},
-	{"ут", {}},
-	{"ют", {}},
-
-	//+ся
-	{"еть", {}},
-	{"ить", {}},
-	{"ать", {}},
-	{"ять", {}},
-	{"оть", {}},
-	{"уть", {}},
-
-	//+ся
-	{"чь", {}},
-
-	//+сь
-	{"ти", {}},
-	{"те", {}},
-	{"и", {}},
-
-	{"ой", {}},
-	{"ай", {}},
-	{"ей", {}},
-	{"ни", {}},
-	{"вь", {}},
-	{"сь", {}},
-
-	///////////////
-	//+сь ся
-	{"л", {}},
-	{"ла", {}},
-	{"ло", {}},
-	{"ли", {}},
-};
 
 //функция избавления от знаков препинания в строке
 vector<string> parse_line(string line)
@@ -89,7 +33,7 @@ vector<string> parse_line(string line)
 
 	for (int i = 0; i < line.size(); i++)
 	{
-		if (((line[i] >= 'А') and (line[i] <= 'Я')) or ((line[i] >= 'а') and (line[i] <= 'я')))
+		if (((line[i] >= -64) && (line[i] <= -33)) || ((line[i] >= -32) && (line[i] <= -1)))
 		{
 			word += line[i];
 		}
@@ -102,8 +46,22 @@ vector<string> parse_line(string line)
 			word = "";
 		}
 	}
+
+	/*for (int i = 0; i < clean_words.size(); i++)
+	{
+		cout << clean_words[i] << endl;
+	}*/
 	return clean_words;
 
+}
+
+string to_lower_case(string str)
+{
+	for (int i = 0; i < str.length(); i++)
+	{
+		str[i] = tolower(str[i]);
+	}
+	return str;
 }
 
 //функция поиска и добавления глаголов в map (словарь)
@@ -112,16 +70,23 @@ void parse_word(vector<string> words)
 
 	for (int i = 0; i < words.size(); i++)
 	{
-		string current_word = words[i];
+		string current_word = to_lower_case(words[i]);
+		
 		//Перебираем ключи словаря
 		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
 		{
 			string current_key = iterator->first;
-			if (current_word.size() > current_key.size())
+			//cout << "CURRENT " << current_key << endl;
+			if ((current_word.size() > 1) && (current_word.size() >= current_key.size()))
 			{
 				if (current_word.substr(current_word.size() - current_key.size()) == current_key)
 				{
-					endings[current_key].push_back(current_word);
+					//Проверка на дубликаты
+					if (find(endings[current_key].begin(), endings[current_key].end(), current_word) == endings[current_key].end())
+					{
+						endings[current_key].push_back(current_word);
+					}
+					
 				}
 			}
 		}
@@ -129,15 +94,18 @@ void parse_word(vector<string> words)
 }
 
 
-//TODO: каждый вектор должен быть проверен на список исключений и 
-//ПРОВЕРКА НА ПОВТОРЕНИЯ
-//ДОБАВИТЬ СЛОВА С -ся И ПОДУМАТЬ НАД -ть
+
+//TODO: каждый вектор должен быть проверен на список исключений 
+//мужской род прошедшее время - принес, прилег, отвез, сжег и т.д. - придумать как учитываться
+//добавить что глаголы не = 1 букве 
 int main()
 {
+
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
 	setlocale(LC_ALL, "");
 
+	initialize_map();
 	string line;
 
 	ifstream in("test.txt");
@@ -145,7 +113,10 @@ int main()
 	{
 		while (getline(in, line))
 		{
-			vector<string> output = parse_line(line);
+			//"чистка" строки от пробелов и знаков препинания (только слова на русском языке)
+			vector<string> output = parse_line(line); 
+
+			//добавление в словарь
 			parse_word(output);
 		}
 	}
@@ -159,7 +130,7 @@ int main()
 		{
 			cout << current_vector.at(i) << ", ";
 		}
-		cout << endl;
+		cout << endl << endl;
 	}
 }
 
