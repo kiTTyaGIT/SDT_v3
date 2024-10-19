@@ -9,14 +9,14 @@ using namespace std;
 
 map<string, vector<string>> endings;
 
-void initialize_map()
+void initialize_map()   //загрузка слов в словарь из файла
 {
-	
+
 	ifstream in("endings.txt");
 	string line;
 	if (in.is_open())
 	{
-		while (getline(in, line)) 
+		while (getline(in, line))
 		{
 			endings.insert(pair<string, vector<string>>(line, {}));
 		}
@@ -24,9 +24,26 @@ void initialize_map()
 	in.close();
 }
 
+vector<string> initialize_exceptions()  //загрузка исключений из файла
+{
+	vector<string> exception;
+	string line = "";
+	ifstream in("exceptions.txt");
 
-//функция избавления от знаков препинания в строке
-vector<string> parse_line(string line)
+	if (in.is_open())
+	{
+		while (getline(in, line))
+		{
+			exception.push_back(line);
+		}
+	}
+	in.close();
+	return exception;
+}
+
+
+
+vector<string> parse_line(string line)  //функция избавления от знаков препинания в строке
 {
 	string word = "";
 	vector<string> clean_words;
@@ -40,59 +57,125 @@ vector<string> parse_line(string line)
 		else
 		{
 			if (word != "")
-			{ 
-				clean_words.push_back(word);
+			{
+				clean_words.push_back(word);   //поместить элемент в конец вектора
 			}
 			word = "";
 		}
 	}
 
-	/*for (int i = 0; i < clean_words.size(); i++)
-	{
-		cout << clean_words[i] << endl;
-	}*/
-	return clean_words;
+
+	return clean_words;   //возвращаем вектор, в котором хранятся только слова из одной строки
 
 }
 
-string to_lower_case(string str)
+string to_lower_case(string str)  //функция понижения заглавной буквы
 {
 	for (int i = 0; i < str.length(); i++)
 	{
-		str[i] = tolower(str[i]);
+		str[i] = tolower(str[i]);  //понизить регистр
 	}
 	return str;
 }
 
-//функция поиска и добавления глаголов в map (словарь)
-void parse_word(vector<string> words)
+
+void parse_word(vector<string> words)   //функция поиска и добавления глаголов в map (словарь)
 {
+
 
 	for (int i = 0; i < words.size(); i++)
 	{
-		string current_word = to_lower_case(words[i]);
-		
-		//Перебираем ключи словаря
-		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
+		string current_word = to_lower_case(words[i]);   //понижаем регистр букв слова (элемента) в векторе
+		vector<string> exception;
+
+		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)  //Перебираем ключи словаря
 		{
-			string current_key = iterator->first;
-			//cout << "CURRENT " << current_key << endl;
+			string current_key = iterator->first;   //берем окончание
+
+
 			if ((current_word.size() > 1) && (current_word.size() >= current_key.size()))
 			{
-				if (current_word.substr(current_word.size() - current_key.size()) == current_key)
+				if (current_word.substr(current_word.size() - current_key.size()) == current_key)  //проверка совпадения окончания с ключом
 				{
-					//Проверка на дубликаты
-					if (find(endings[current_key].begin(), endings[current_key].end(), current_word) == endings[current_key].end())
+					exception = initialize_exceptions();
+
+					if ((find(endings[current_key].begin(), endings[current_key].end(), current_word) == endings[current_key].end()) &&
+						(find(exception.begin(), exception.end(), current_word) == exception.end()))  //Проверка на дубликаты и исключения
 					{
 						endings[current_key].push_back(current_word);
 					}
-					
 				}
 			}
 		}
 	}
 }
 
+
+vector <string> highlight()   //вывод с нумерацией предложений
+{
+	string line;
+	string word = "";
+	vector<string> sentence;
+	ifstream in("test.txt");
+	if (in.is_open())
+	{
+		while (getline(in, line))
+		{
+
+			for (int i = 0; i < line.size(); i++)
+			{
+				if (line[i] != '.')
+				{
+					if (word[0] == ' ')
+					{
+						word = "";
+					}
+					word += line[i];
+				}
+				else
+				{
+					word += ".";
+
+					sentence.push_back(word);   //поместить элемент в конец вектора
+					word = "";
+				}
+			}
+		}
+	}
+	in.close();
+	return sentence;
+}
+
+
+void rhyme()  //вывод рифмы в файл
+{
+	int i = 0;
+	string str;
+	ofstream fout("rhyme.txt");
+	if (fout.is_open())
+	{
+		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
+		{
+			vector<string> current_vector = iterator->second;
+			if (!current_vector.empty())
+			{
+				if (current_vector.size() > 1)
+				{
+					fout << ++i << ")" << " ";
+					str = "";
+					for (int i = 0; i < current_vector.size(); i++)
+					{
+						str += current_vector.at(i) + " - ";
+					}
+					fout << str.erase(str.size() - 3);
+					fout << endl << endl;
+				}
+			}
+		}
+	}
+	fout.close();
+
+}
 
 
 //TODO: каждый вектор должен быть проверен на список исключений 
@@ -104,8 +187,8 @@ int main()
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
 	setlocale(LC_ALL, "");
-
-	initialize_map();
+	int t = 0;
+	initialize_map();  //загрузка слов в словарь из файла
 	string line;
 
 	ifstream in("test.txt");
@@ -113,16 +196,14 @@ int main()
 	{
 		while (getline(in, line))
 		{
-			//"чистка" строки от пробелов и знаков препинания (только слова на русском языке)
-			vector<string> output = parse_line(line); 
+			vector<string> output = parse_line(line);   //"чистка" строки от пробелов и знаков препинания (только слова на русском языке)
 
-			//добавление в словарь
-			parse_word(output);
+			parse_word(output);   //добавление в словарь
 		}
 	}
 	in.close();
 
-	for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
+	/*for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
 	{
 		cout << "KEY: " << iterator->first << endl;
 		vector<string> current_vector = iterator->second;
@@ -131,5 +212,12 @@ int main()
 			cout << current_vector.at(i) << ", ";
 		}
 		cout << endl << endl;
+	}*/
+	vector<string> text = highlight();
+
+	for (auto iterator = text.begin(); iterator != text.end(); iterator++)
+	{
+		cout << "(" << ++t << ")" << *iterator << endl;
 	}
+	rhyme();
 }
