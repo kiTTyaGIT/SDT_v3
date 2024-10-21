@@ -50,7 +50,7 @@ vector<string> parse_line(string line)  //функция избавления о
 
 	for (int i = 0; i < line.size(); i++)
 	{
-		if (((line[i] >= -64) && (line[i] <= -33)) || ((line[i] >= -32) && (line[i] <= -1)))
+		if (((line[i] >= -64) && (line[i] <= -33)) || ((line[i] >= -32) && (line[i] <= -1)) || (line[i] == -88) || (line[i] == -72))
 		{
 			word += line[i];
 		}
