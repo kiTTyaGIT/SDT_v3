@@ -7,6 +7,7 @@
 using namespace std;
 
 vector<int> vowels = { 'а','о','я','е','ё','и','у','ы' };
+vector<vector<string>> sentences = {};
 map<string, vector<string>> endings;
 map<pair<int, string>, vector<string>> syllables_to_words; // ключ - кол-во слогов + окончание, значение - вектор слов
 
@@ -23,6 +24,89 @@ void initialize_map()   //загрузка слов в словарь из фа�
 		}
 	}
 	in.close();
+}
+
+string to_lower_case_and_plain_word(string str)  //функция понижения заглавной буквы
+{
+	for (int i = 0; i < str.length(); i++)
+	{
+		str[i] = tolower(str[i]);  //понизить регистр
+	}
+
+
+	if (str.size() > 1)
+	{
+		if (!(((str[0] >= -64) && (str[0] <= -33)) || ((str[0] >= -32) && (str[0] <= -1)) || (str[0] == -88) || (str[0] == -72))) // если первый элемент строки не буква
+		{
+			str = str.substr(1, str.size());
+		}
+		if (!(((str[str.size() - 1] >= -64) && (str[str.size() - 1] <= -33)) || ((str[str.size() - 1] >= -32) && (str[str.size() - 1] <= -1)) || (str[str.size() - 1] == -88) || (str[str.size() - 1] == -72))) // если последний элемент строки не буква
+		{
+			str = str.substr(0, str.size() - 1);
+		}
+	}
+	return str;
+}
+
+void highlight()   //вывод с нумерацией предложений
+{
+	string line;
+	string word = "";
+	ifstream in("test.txt");
+	if (in.is_open())
+	{
+		int index = 0;
+		while (getline(in, line))
+		{
+			vector<string> current_sentence;
+			for (int i = 0; i < line.size(); i++)
+			{
+				if (line[i] != '.' && line[i] != '!' && line[i] != '?')
+				{
+					if (line[i] == ' ')
+					{
+						if (word != "")
+						{
+							current_sentence.push_back(word);
+						}
+						word = "";
+					}
+					else
+					{
+						word += line[i]; 
+					}
+				}
+				else
+				{
+					if (word != "")
+					{
+						current_sentence.push_back(word);
+					}
+					sentences.push_back(current_sentence);
+					current_sentence.clear();
+					word = "";
+				}
+			}
+		}
+	}
+	in.close();
+}
+
+vector<int> count_number_of_examples_in_text(string word)
+{
+	vector<int> examples_of_word_in_text;
+	for (int i = 0; i < sentences.size(); i++)
+	{
+		vector<string> current_vector = sentences[i];
+		for (int j = 0; j < current_vector.size(); j++)
+		{
+			if (to_lower_case_and_plain_word(current_vector[j]) == word)
+			{
+				examples_of_word_in_text.push_back(i + 1);
+			}
+		}
+	}
+	return examples_of_word_in_text;
 }
 
 vector<string> initialize_exceptions()  //загрузка исключений из файла
@@ -89,16 +173,6 @@ vector<string> parse_line(string line)  //функция избавления о
 
 
 	return clean_words;   //возвращаем вектор, в котором хранятся только слова из одной строки
-
-}
-
-string to_lower_case(string str)  //функция понижения заглавной буквы
-{
-	for (int i = 0; i < str.length(); i++)
-	{
-		str[i] = tolower(str[i]);  //понизить регистр
-	}
-	return str;
 }
 
 
@@ -108,7 +182,7 @@ void parse_word(vector<string> words)   //функция поиска и доб�
 
 	for (int i = 0; i < words.size(); i++)
 	{
-		string current_word = to_lower_case(words[i]);   //понижаем регистр букв слова (элемента) в векторе
+		string current_word = to_lower_case_and_plain_word(words[i]);   //понижаем регистр букв слова (элемента) в векторе
 		vector<string> exception;
 
 		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)  //Перебираем ключи словаря
@@ -135,40 +209,21 @@ void parse_word(vector<string> words)   //функция поиска и доб�
 	}
 }
 
-
-vector <string> highlight()   //вывод с нумерацией предложений
+void print_examples_in_text(vector<int> examples_int_text, ofstream& fout) 
 {
-	string line;
-	string word = "";
-	vector<string> sentence;
-	ifstream in("test.txt");
-	if (in.is_open())
+	fout << '[';
+	for (int i = 0; i < examples_int_text.size(); i++)
 	{
-		while (getline(in, line))
+		if (i == examples_int_text.size() - 1)
 		{
-
-			for (int i = 0; i < line.size(); i++)
-			{
-				if (line[i] != '.')
-				{
-					if (word[0] == ' ')
-					{
-						word = "";
-					}
-					word += line[i];
-				}
-				else
-				{
-					word += ".";
-
-					sentence.push_back(word);   //поместить элемент в конец вектора
-					word = "";
-				}
-			}
+			fout << examples_int_text[i];
+		}
+		else
+		{
+			fout << examples_int_text[i] << ", ";
 		}
 	}
-	in.close();
-	return sentence;
+	fout << ']';
 }
 
 int print_words_according_to_syllables(string ending, ofstream& fout, int print_num)
@@ -190,13 +245,20 @@ int print_words_according_to_syllables(string ending, ofstream& fout, int print_
 			fout << "Кол-во слогов - " << current_number_of_syllables << " : ";
 			for (int i = 0; i < current_words.size(); i++)
 			{
+				vector<int> examples_int_text;
 				if (i == current_words.size() - 1)
 				{
-					fout << current_words[i] << endl;
+					fout << current_words[i];
+					examples_int_text = count_number_of_examples_in_text(current_words[i]);
+					print_examples_in_text(examples_int_text, fout);
+					fout << endl;
 				}
 				else
 				{
-					fout << current_words[i] << " - ";
+					fout << current_words[i];
+					examples_int_text = count_number_of_examples_in_text(current_words[i]);
+					print_examples_in_text(examples_int_text, fout);
+					fout << " - ";
 				}
 			}
 			fout << endl;
@@ -254,7 +316,7 @@ int main()
 	}
 	in.close();
 
-	for (auto iterator = syllables_to_words.begin(); iterator != syllables_to_words.end(); iterator++)
+	/*for (auto iterator = syllables_to_words.begin(); iterator != syllables_to_words.end(); iterator++)
 	{
 		cout << "KEY 1: " << iterator->first.first << " KEY 2: " << iterator->first.second << endl;
 		vector<string> current_vector = iterator->second;
@@ -263,7 +325,7 @@ int main()
 			cout << current_vector.at(i) << ", ";
 		}
 		cout << endl << endl;
-	}
+	}*/
 
 	/*for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
 	{
@@ -275,11 +337,25 @@ int main()
 		}
 		cout << endl << endl;
 	}*/
-	vector<string> text = highlight();
+	highlight();
 
-	for (auto iterator = text.begin(); iterator != text.end(); iterator++)
+
+	for (int i = 0; i < sentences.size(); i++)
 	{
-		cout << "(" << ++t << ")" << *iterator << endl;
+		cout << "(" << i + 1 << ")";
+		vector<string> current_sentence = sentences[i];
+
+		for (int j = 0; j < current_sentence.size(); j++)
+		{
+			if (j == current_sentence.size() - 1)
+			{
+				cout << current_sentence[j] << "." << endl;
+			}
+			else
+			{
+				cout << current_sentence[j] << " ";
+			}
+		}
 	}
 	rhyme();
 }
