@@ -7,7 +7,9 @@
 using namespace std;
 
 vector<int> vowels = { 'а','о','я','е','ё','и','у','ы' };
-map<string, vector<string>> endings;
+vector<vector<string>> sentences = {};
+vector<string> exceptions;
+map<string, vector<pair<string, vector<int>>>> endings;
 map<pair<int, string>, vector<string>> syllables_to_words; // ключ - кол-во слогов + окончание, значение - вектор слов
 
 void initialize_map()   //загрузка слов в словарь из файла
@@ -19,15 +21,14 @@ void initialize_map()   //загрузка слов в словарь из фа�
 	{
 		while (getline(in, line))
 		{
-			endings.insert(pair<string, vector<string>>(line, {}));
+			endings.insert(pair<string, vector<pair<string, vector<int>>>>(line, {}));
 		}
 	}
 	in.close();
 }
 
-vector<string> initialize_exceptions()  //загрузка исключений из файла
+void initialize_exceptions()  //загрузка исключений из файла
 {
-	vector<string> exception;
 	string line = "";
 	ifstream in("exceptions.txt");
 
@@ -35,13 +36,77 @@ vector<string> initialize_exceptions()  //загрузка исключений 
 	{
 		while (getline(in, line))
 		{
-			exception.push_back(line);
+			exceptions.push_back(line);
 		}
 	}
 	in.close();
-	return exception;
 }
 
+string to_lower_case_and_plain_word(string str)  //функция понижения заглавной буквы
+{
+	for (int i = 0; i < str.length(); i++)
+	{
+		str[i] = tolower(str[i]);  //понизить регистр
+	}
+
+
+	if (str.size() > 1)
+	{
+		if (!(((str[0] >= -64) && (str[0] <= -33)) || ((str[0] >= -32) && (str[0] <= -1)) || (str[0] == -88) || (str[0] == -72))) // если первый элемент строки не буква
+		{
+			str = str.substr(1, str.size());
+		}
+		if (!(((str[str.size() - 1] >= -64) && (str[str.size() - 1] <= -33)) || ((str[str.size() - 1] >= -32) && (str[str.size() - 1] <= -1)) || (str[str.size() - 1] == -88) || (str[str.size() - 1] == -72))) // если последний элемент строки не буква
+		{
+			str = str.substr(0, str.size() - 1);
+		}
+	}
+	return str;
+}
+
+void highlight()   //вывод с нумерацией предложений
+{
+	string line;
+	string word = "";
+	ifstream in("test.txt");
+	if (in.is_open())
+	{
+		int index = 0;
+		while (getline(in, line))
+		{
+			vector<string> current_sentence;
+			for (int i = 0; i < line.size(); i++)
+			{
+				if (line[i] != '.' && line[i] != '!' && line[i] != '?')
+				{
+					if (line[i] == ' ')
+					{
+						if (word != "")
+						{
+							current_sentence.push_back(word);
+						}
+						word = "";
+					}
+					else
+					{
+						word += line[i]; 
+					}
+				}
+				else
+				{
+					if (word != "")
+					{
+						current_sentence.push_back(word);
+					}
+					sentences.push_back(current_sentence);
+					current_sentence.clear();
+					word = "";
+				}
+			}
+		}
+	}
+	in.close();
+}
 
 void count_syllables(string word, string ending) //Функция подсчёта слогов в слове
 {
@@ -64,111 +129,79 @@ void count_syllables(string word, string ending) //Функция подсчёт
 	}
 }
 
-
-
-vector<string> parse_line(string line)  //функция избавления от знаков препинания в строке
+int find_element_in_vector_pair(vector<pair<string, vector<int>>> pair_vector, string word)
 {
-	string word = "";
-	vector<string> clean_words;
-
-	for (int i = 0; i < line.size(); i++)
+	for (int i = 0; i < pair_vector.size(); i++)
 	{
-		if (((line[i] >= -64) && (line[i] <= -33)) || ((line[i] >= -32) && (line[i] <= -1)) || (line[i] == -88) || (line[i] == -72))
+		if (pair_vector[i].first == word)
 		{
-			word += line[i];
+			return i;
+		}
+	}
+	return -1;
+}
+
+bool is_element_in_vector_pair(vector<pair<string, vector<int>>> pair_vector, string word)
+{
+	for (int i = 0; i < pair_vector.size(); i++)
+	{
+		if (pair_vector[i].first == word)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void parse_text()   //функция поиска и добавления глаголов в map (словарь)
+{
+	for (int i = 0; i < sentences.size(); i++)
+	{
+		vector<string> current_sentence = sentences[i];
+		for (int j = 0; j < current_sentence.size(); j++)
+		{
+			string current_word = to_lower_case_and_plain_word(current_sentence[j]);
+			for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)  //Перебираем ключи словаря
+			{
+				string current_key = iterator->first;   //берем окончание
+
+				if ((current_word.size() > 1) && (current_word.size() >= current_key.size()))
+				{
+					if (current_word.substr(current_word.size() - current_key.size()) == current_key)  //проверка совпадения окончания с ключом
+					{
+						if ((is_element_in_vector_pair(endings[current_key], current_word) == false) 
+							&& (find(exceptions.begin(), exceptions.end(), current_word) == exceptions.end()))  //Проверка на дубликаты и исключения
+						{
+							endings[current_key].push_back(pair<string, vector<int>>(current_word, {i + 1}));
+							count_syllables(current_word, current_key); //подсчёт слогов текущего слова
+						}
+						else if (find(exceptions.begin(), exceptions.end(), current_word) == exceptions.end())
+						{
+							int index = find_element_in_vector_pair(endings[current_key], current_word);
+							endings[current_key][index].second.push_back(i + 1);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void print_examples_in_text(vector<int> examples_int_text, ofstream& fout) 
+{
+	fout << '[';
+	for (int i = 0; i < examples_int_text.size(); i++)
+	{
+		if (i == examples_int_text.size() - 1)
+		{
+			fout << examples_int_text[i];
 		}
 		else
 		{
-			if (word != "")
-			{
-				clean_words.push_back(word);   //поместить элемент в конец вектора
-			}
-			word = "";
+			fout << examples_int_text[i] << ", ";
 		}
 	}
-
-
-	return clean_words;   //возвращаем вектор, в котором хранятся только слова из одной строки
-
-}
-
-string to_lower_case(string str)  //функция понижения заглавной буквы
-{
-	for (int i = 0; i < str.length(); i++)
-	{
-		str[i] = tolower(str[i]);  //понизить регистр
-	}
-	return str;
-}
-
-
-void parse_word(vector<string> words)   //функция поиска и добавления глаголов в map (словарь)
-{
-
-
-	for (int i = 0; i < words.size(); i++)
-	{
-		string current_word = to_lower_case(words[i]);   //понижаем регистр букв слова (элемента) в векторе
-		vector<string> exception;
-
-		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)  //Перебираем ключи словаря
-		{
-			string current_key = iterator->first;   //берем окончание
-
-
-			if ((current_word.size() > 1) && (current_word.size() >= current_key.size()))
-			{
-				if (current_word.substr(current_word.size() - current_key.size()) == current_key)  //проверка совпадения окончания с ключом
-				{
-					exception = initialize_exceptions();
-
-					if ((find(endings[current_key].begin(), endings[current_key].end(), current_word) == endings[current_key].end()) &&
-						(find(exception.begin(), exception.end(), current_word) == exception.end()))  //Проверка на дубликаты и исключения
-					{
-						endings[current_key].push_back(current_word);
-
-						count_syllables(current_word, current_key); //подсчёт слогов текущего слова
-					}
-				}
-			}
-		}
-	}
-}
-
-
-vector <string> highlight()   //вывод с нумерацией предложений
-{
-	string line;
-	string word = "";
-	vector<string> sentence;
-	ifstream in("test.txt");
-	if (in.is_open())
-	{
-		while (getline(in, line))
-		{
-
-			for (int i = 0; i < line.size(); i++)
-			{
-				if (line[i] != '.')
-				{
-					if (word[0] == ' ')
-					{
-						word = "";
-					}
-					word += line[i];
-				}
-				else
-				{
-					word += ".";
-
-					sentence.push_back(word);   //поместить элемент в конец вектора
-					word = "";
-				}
-			}
-		}
-	}
-	in.close();
-	return sentence;
+	fout << ']';
 }
 
 int print_words_according_to_syllables(string ending, ofstream& fout, int print_num)
@@ -190,13 +223,20 @@ int print_words_according_to_syllables(string ending, ofstream& fout, int print_
 			fout << "Кол-во слогов - " << current_number_of_syllables << " : ";
 			for (int i = 0; i < current_words.size(); i++)
 			{
+				vector<int> examples_int_text;
 				if (i == current_words.size() - 1)
 				{
-					fout << current_words[i] << endl;
+					fout << current_words[i];
+					int index = find_element_in_vector_pair(endings[ending], current_words[i]);
+					print_examples_in_text(endings[ending][index].second, fout);
+					fout << endl;
 				}
 				else
 				{
-					fout << current_words[i] << " - ";
+					fout << current_words[i];
+					int index = find_element_in_vector_pair(endings[ending], current_words[i]);
+					print_examples_in_text(endings[ending][index].second, fout);
+					fout << " - ";
 				}
 			}
 			fout << endl;
@@ -215,7 +255,7 @@ void rhyme()  //вывод рифмы в файл
 	{
 		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
 		{
-			vector<string> current_vector = iterator->second;
+			vector<pair<string, vector<int>>> current_vector = iterator->second;
 			if (!current_vector.empty())
 			{
 				if (current_vector.size() > 1)
@@ -238,48 +278,27 @@ int main()
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
 	setlocale(LC_ALL, "");
-	int t = 0;
 	initialize_map();  //загрузка слов в словарь из файла
-	string line;
+	initialize_exceptions(); //загрузка исключений из файла
+	highlight();
+	parse_text();
 
-	ifstream in("test.txt");
-	if (in.is_open())
+	for (int i = 0; i < sentences.size(); i++)
 	{
-		while (getline(in, line))
+		cout << "(" << i + 1 << ")";
+		vector<string> current_sentence = sentences[i];
+
+		for (int j = 0; j < current_sentence.size(); j++)
 		{
-			vector<string> output = parse_line(line);   //"чистка" строки от пробелов и знаков препинания (только слова на русском языке)
-
-			parse_word(output);   //добавление в словарь
+			if (j == current_sentence.size() - 1)
+			{
+				cout << current_sentence[j] << "." << endl;
+			}
+			else
+			{
+				cout << current_sentence[j] << " ";
+			}
 		}
-	}
-	in.close();
-
-	for (auto iterator = syllables_to_words.begin(); iterator != syllables_to_words.end(); iterator++)
-	{
-		cout << "KEY 1: " << iterator->first.first << " KEY 2: " << iterator->first.second << endl;
-		vector<string> current_vector = iterator->second;
-		for (int i = 0; i < current_vector.size(); i++)
-		{
-			cout << current_vector.at(i) << ", ";
-		}
-		cout << endl << endl;
-	}
-
-	/*for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
-	{
-		cout << "KEY: " << iterator->first << endl;
-		vector<string> current_vector = iterator->second;
-		for (int i = 0; i < current_vector.size(); i++)
-		{
-			cout << current_vector.at(i) << ", ";
-		}
-		cout << endl << endl;
-	}*/
-	vector<string> text = highlight();
-
-	for (auto iterator = text.begin(); iterator != text.end(); iterator++)
-	{
-		cout << "(" << ++t << ")" << *iterator << endl;
 	}
 	rhyme();
 }
