@@ -4,9 +4,10 @@
 #include <regex>
 #include <fstream>
 #include <Windows.h>
+#include <iomanip>
 using namespace std;
 
-vector<int> vowels = { 'а','о','я','е','ё','и','у','ы' };
+vector<int> vowels = { 'а','о','я','е','ё','и','у','ы','ю','э'};
 vector<vector<string>> sentences = {};
 vector<string> exceptions;
 map<string, vector<pair<string, vector<int>>>> endings;
@@ -64,7 +65,7 @@ string to_lower_case_and_plain_word(string str)  //функция понижен
 	return str;
 }
 
-void highlight()   //вывод с нумерацией предложений
+void parse_sentences()   //разделение текста на предложения
 {
 	string line;
 	string word = "";
@@ -106,6 +107,33 @@ void highlight()   //вывод с нумерацией предложений
 		}
 	}
 	in.close();
+}
+
+void print_numbered_sentences()
+{
+	ofstream fout("numbered_text.txt");
+	if (fout.is_open())
+	{
+		for (int i = 0; i < sentences.size(); i++)
+		{
+			fout << "(" << i + 1 << ")";
+			vector<string> current_sentence = sentences[i];
+
+			for (int j = 0; j < current_sentence.size(); j++)
+			{
+				if (j == current_sentence.size() - 1)
+				{
+					fout << current_sentence[j] << "." << endl;
+				}
+				else
+				{
+					fout << current_sentence[j] << " ";
+				}
+			}
+		}
+	}
+
+	fout.close();
 }
 
 void count_syllables(string word, string ending) //Функция подсчёта слогов в слове
@@ -187,24 +215,21 @@ void parse_text()   //функция поиска и добавления гла
 	}
 }
 
-void print_examples_in_text(vector<int> examples_int_text, ofstream& fout) 
+void print_examples_in_text(vector<int> examples_int_text, ofstream& fout) //вывод номеров предложений
 {
 	fout << '[';
-	for (int i = 0; i < examples_int_text.size(); i++)
-	{
-		if (i == examples_int_text.size() - 1)
-		{
-			fout << examples_int_text[i];
-		}
-		else
-		{
-			fout << examples_int_text[i] << ", ";
-		}
-	}
-	fout << ']';
+    for (int i = 0; i < examples_int_text.size(); i++)
+    {
+        fout << examples_int_text[i]; //выводим номер предложения
+        if (i < examples_int_text.size() - 1)
+        {
+            fout << ", "; //добавляем запятую, если это не последний номер
+        }
+    }
+    fout << ']';
 }
 
-int print_words_according_to_syllables(string ending, ofstream& fout, int print_num)
+int print_words_according_to_syllables(string ending, ofstream& fout, int print_num)  //функция вывода с текущим окончанием
 {
 	bool is_start = true;
 	for (auto iterator = syllables_to_words.begin(); iterator != syllables_to_words.end(); iterator++)
@@ -249,25 +274,54 @@ int print_words_according_to_syllables(string ending, ofstream& fout, int print_
 void rhyme()  //вывод рифмы в файл
 {
 	int i = 0;
-	string str;
+	int total_count = 0;  // переменная для хранения итогового количества элементов в векторах
 	ofstream fout("rhyme.txt");
 	if (fout.is_open())
 	{
 		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
 		{
 			vector<pair<string, vector<int>>> current_vector = iterator->second;
-			if (!current_vector.empty())
+			if (current_vector.size() > 1)
 			{
-				if (current_vector.size() > 1)
+				int n = current_vector.size();
+				int combination_count = (n * (n - 1)) / 2;  // количество сочетаний без повторений для текущего окончания
+
+				total_count += combination_count;  // добавляем количество сочетаний для текущего окончания к итоговому количеству
+				
+				i = print_words_according_to_syllables(iterator->first, fout, i); // вызов функции вывода с текущим окончанием 
+				fout << "--------------------------------" << endl;
+				fout << "Количество пар для группы: " << combination_count << endl;
+				fout << "--------------------------------" << endl << endl;
+				
+			}
+		}
+		// выводим итоговое количество сочетаний для всех окончаний
+		fout << endl;
+		fout << endl << "Общее число найденных рифмующихся пар: " << total_count << endl;
+	}
+	fout.close();
+}
+
+void count_words()  //вывод числа появлений каждого из слов
+{
+	ofstream fout("count.txt");
+	if (fout.is_open())
+	{
+		fout << left << setw(20) << "Слово:" << "Число появлений в тексте:" << endl;
+		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
+		{
+			vector<pair<string, vector<int>>> pair_vector = iterator->second;
+			if (pair_vector.size() > 1)
+			{
+				for (int i = 0; i < pair_vector.size(); i++)
 				{
-					i = print_words_according_to_syllables(iterator->first, fout, i); //вызов функции вывода с текущим окончанием 
+					fout << left << setw(20) << pair_vector[i].first << pair_vector[i].second.size() << endl;
 				}
 			}
 		}
 	}
 	fout.close();
 }
-
 
 //TODO: каждый вектор должен быть проверен на список исключений 
 //мужской род прошедшее время - принес, прилег, отвез, сжег и т.д. - придумать как учитываться
@@ -280,25 +334,9 @@ int main()
 	setlocale(LC_ALL, "");
 	initialize_map();  //загрузка слов в словарь из файла
 	initialize_exceptions(); //загрузка исключений из файла
-	highlight();
+	parse_sentences();
 	parse_text();
-
-	for (int i = 0; i < sentences.size(); i++)
-	{
-		cout << "(" << i + 1 << ")";
-		vector<string> current_sentence = sentences[i];
-
-		for (int j = 0; j < current_sentence.size(); j++)
-		{
-			if (j == current_sentence.size() - 1)
-			{
-				cout << current_sentence[j] << "." << endl;
-			}
-			else
-			{
-				cout << current_sentence[j] << " ";
-			}
-		}
-	}
 	rhyme();
+	count_words();
+	print_numbered_sentences();
 }
