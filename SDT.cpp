@@ -65,6 +65,12 @@ string to_lower_case_and_plain_word(string str)  //функция понижен
 	return str;
 }
 
+bool is_letter(char letter)
+{
+	return ((letter >= -64 && letter <= -33) || ((letter >= -32) && (letter <= -1)) || (letter == -88) || (letter == -72));
+}
+
+// TODO 
 void parse_sentences()   //разделение текста на предложения
 {
 	string line;
@@ -90,7 +96,11 @@ void parse_sentences()   //разделение текста на предлож
 					}
 					else
 					{
-						word += line[i]; 
+						word += line[i];
+						//if (is_letter(line[i]))
+						//{
+							//word += line[i];
+						//}
 					}
 				}
 				else
@@ -334,6 +344,7 @@ int main()
 	setlocale(LC_ALL, "");
 	initialize_map();  //загрузка слов в словарь из файла
 	initialize_exceptions(); //загрузка исключений из файла
+	parse_sentences_to_process();
 	parse_sentences();
 	parse_text();
 	rhyme();
