@@ -158,7 +158,7 @@ void print_numbered_sentences() //запись в файл пронумеров�
 			{
 				if (j == current_sentence.size() - 1)
 				{
-					fout << current_sentence[j] << " " << endl;
+					fout << current_sentence[j] << "." << endl;
 				}
 				else
 				{
