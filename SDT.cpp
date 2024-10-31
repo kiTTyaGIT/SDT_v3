@@ -65,12 +65,46 @@ string to_lower_case_and_plain_word(string str)  //функция понижен
 	return str;
 }
 
+bool open_file(string& filename, ifstream& in)  //проверка файла на наличие и пустоту
+{
+	bool f = true;
+	do
+	{
+		f = true;
+		system("cls");
+		in.open(filename);
+
+		if (!in.is_open())  //проверка на открытие
+		{
+			cout << endl << "Ошибка! Файл не найден. Проверьте нахождение файла <text.txt> в папке с программой." << endl << endl;
+			f = false;
+			system("pause");
+			continue;
+		}
+
+		if (in.peek() == -1)  //проверка файла на пустоту 
+		{
+			cout << endl << "Ошибка! Файл пустой. Проверьте наличие текста в файле <text.txt>" << endl << endl;
+			f = false;
+			in.close();
+			system("pause");
+			continue;
+		}
+
+	} while (f != true);
+
+	return true;
+	
+}
+
 void parse_sentences()   //разделение текста на предложения
 {
 	string line;
 	string word = "";
-	ifstream in("test.txt");
-	if (in.is_open())
+	string filename = "text.txt";
+	ifstream in;
+
+	if (open_file(filename, in))
 	{
 		int index = 0;
 		while (getline(in, line))
@@ -95,6 +129,7 @@ void parse_sentences()   //разделение текста на предлож
 				}
 				else
 				{
+
 					if (word != "")
 					{
 						current_sentence.push_back(word);
@@ -109,7 +144,7 @@ void parse_sentences()   //разделение текста на предлож
 	in.close();
 }
 
-void print_numbered_sentences()
+void print_numbered_sentences() //запись в файл пронумерованных предложений
 {
 	ofstream fout("numbered_text.txt");
 	if (fout.is_open())
@@ -123,12 +158,13 @@ void print_numbered_sentences()
 			{
 				if (j == current_sentence.size() - 1)
 				{
-					fout << current_sentence[j] << "." << endl;
+					fout << current_sentence[j] << " " << endl;
 				}
 				else
 				{
 					fout << current_sentence[j] << " ";
 				}
+				
 			}
 		}
 	}
@@ -322,15 +358,28 @@ void count_words()  //вывод числа появлений каждого и
 	}
 	fout.close();
 }
+ 
+void title()  //анонс назначения программы
+{
+	cout << endl << endl << endl << setw(12) << " " << "ПРОГРАММА ДЛЯ ФОРМИРОВАНИЯ РИФМОВАННЫХ ПАР ГЛАГОЛОВ" << endl << endl << endl << endl << endl;
+}
+
+void print_message()
+{
+	cout << "Рифмованные пары из поступающего текста записаны в файл: <rhyme.txt>" << endl
+		<< "Количество появлений каждого из слов, составляющих рифмованные пары, содержатся в файле: <count.txt>" << endl
+		<< "Пронумерованные предложения поступающего на вход программы текста находятся в файле: <numbered_text.txt>" << endl << endl;
+}
 
 //TODO: каждый вектор должен быть проверен на список исключений 
 //мужской род прошедшее время - принес, прилег, отвез, сжег и т.д. - придумать как учитываться
 //добавить что глаголы не = 1 букве 
 int main()
 {
-
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
+	title();
+	system("pause");
 	setlocale(LC_ALL, "");
 	initialize_map();  //загрузка слов в словарь из файла
 	initialize_exceptions(); //загрузка исключений из файла
@@ -339,4 +388,5 @@ int main()
 	rhyme();
 	count_words();
 	print_numbered_sentences();
+	print_message();
 }
