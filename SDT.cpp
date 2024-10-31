@@ -133,11 +133,8 @@ void parse_sentences()   //разделение текста на предлож
 				}
 				else
 				{
-
-					if (word != "")
-					{
-						current_sentence.push_back(word);
-					}
+					word += line[i];
+					current_sentence.push_back(word);
 					sentences.push_back(current_sentence);
 					current_sentence.clear();
 					word = "";
@@ -162,7 +159,7 @@ void print_numbered_sentences() //запись в файл пронумеров�
 			{
 				if (j == current_sentence.size() - 1)
 				{
-					fout << current_sentence[j] << "." << endl;
+					fout << current_sentence[j] << endl;
 				}
 				else
 				{
@@ -257,7 +254,7 @@ void parse_text()   //функция поиска и добавления гла
 
 void print_examples_in_text(vector<int> examples_int_text, ofstream& fout) //вывод номеров предложений
 {
-	fout << '[';
+	fout << " [";
     for (int i = 0; i < examples_int_text.size(); i++)
     {
         fout << examples_int_text[i]; //выводим номер предложения
@@ -266,7 +263,7 @@ void print_examples_in_text(vector<int> examples_int_text, ofstream& fout) //в�
             fout << ", "; //добавляем запятую, если это не последний номер
         }
     }
-    fout << ']';
+    fout << "]";
 }
 
 int print_words_according_to_syllables(string ending, ofstream& fout, int print_num)  //функция вывода с текущим окончанием
@@ -370,8 +367,8 @@ void title()  //анонс назначения программы
 
 void print_message()
 {
-	cout << "Рифмованные пары из поступающего текста записаны в файл: <rhyme.txt>" << endl
-		<< "Количество появлений каждого из слов, составляющих рифмованные пары, содержатся в файле: <count.txt>" << endl
+	cout << "Рифмованные пары из поступающего текста записаны в файл: <rhyme.txt>" << endl << endl
+		<< "Количество появлений каждого из слов, составляющих рифмованные пары, содержатся в файле: <count.txt>" << endl << endl
 		<< "Пронумерованные предложения поступающего на вход программы текста находятся в файле: <numbered_text.txt>" << endl << endl;
 }
 
