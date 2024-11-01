@@ -101,16 +101,16 @@ void parse_sentences()   //разделение текста на предлож
 {
 	string line;
 	string word = "";
-	string filename = "text.txt";
+	string filename = "text(1).txt";
 	ifstream in;
 	bool quote_is_open = false; //флаг открытия кавычек
+	vector<string> current_sentence;
 
 	if (open_file(filename, in))
 	{
 		int index = 0;
 		while (getline(in, line))
 		{
-			vector<string> current_sentence;
 			for (int i = 0; i < line.size(); i++)
 			{
 				if (line[i] != '.' && line[i] != '!' && line[i] != '?' && line[i] != '…')
@@ -124,7 +124,13 @@ void parse_sentences()   //разделение текста на предлож
 					{
 						quote_is_open = false;
 
-						if (line[i - 1] == '?!' || line[i - 1] == '!' || line[i - 1] == '?' || line[i - 1] == '…')  //проверка, не идет ли перед кавычками завершающий знак предложения; если идет, то тогда записываем завершающие кавычки и завершаем предложение; Пример: "Привет!"                                                                                     
+						if ((i != line.size() - 1 && i != line.size() - 2 && i != line.size() - 3 && i != line.size() - 4) &&      //если после кавычек идет тире со словами автора с маленькой буквы, продолжаем предложение. "Привет!" - сказал он.
+							(line[i + 2] == '–' && (line[i + 4] >= 'а' && line[i + 4] <= 'я')))  
+						{
+							word += line[i];
+							continue;
+						}
+						if (line[i - 1] == '?!' || line[i - 1] == '!' || line[i - 1] == '?' || line[i - 1] == '…' || line[i - 1] == '.')  //проверка, не идет ли перед кавычками завершающий знак предложения; если идет, то тогда записываем завершающие кавычки и завершаем предложение; Пример: "Привет!"                                                                                     
 						{
 							word += line[i];
 							current_sentence.push_back(word);
@@ -152,6 +158,7 @@ void parse_sentences()   //разделение текста на предлож
 						//}
 					}
 				}
+
 
 				else   //если встретился завершающий знак
 				{
