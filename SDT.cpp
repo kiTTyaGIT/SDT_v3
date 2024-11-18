@@ -415,28 +415,64 @@ void rhyme()  //вывод рифмы в файл
 	fout.close();
 }
 
+//void count_words()  //вывод числа появлений каждого из слов
+//{
+//	ofstream fout("count.txt");
+//	if (fout.is_open())
+//	{
+//		fout << "Данный текстовый файл содержит найденные члены рифмующихся пар и их количество появлений в тексте.\n\n" << endl;
+//		fout << left << setw(20) << "Слово:" << "Число появлений в тексте:" << endl;
+//		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)  //прохождение по map (каждая итерация - новый вектор слов к новому окончанию)
+//		{
+//			vector<pair<string, vector<int>>> pair_vector = iterator->second;
+//		
+//			if (pair_vector.size() > 1)  //выводим только те слова, которые составляют пары рифм (если одно слово в группе окончания - не выводим)
+//			{
+				/*for (int i = 0; i < pair_vector.size(); i++)
+				{
+					fout << left << setw(20) << pair_vector[i].first << pair_vector[i].second.size() << endl;
+				}*/
+//			}
+//		}
+//	}
+//	fout.close();
+//}
+ 
+bool compare(pair < string, vector<int>> a, pair < string, vector<int>> b)  //функция, определяющая логику сортировки
+{
+	return a.second.size() < b.second.size();
+}
+
 void count_words()  //вывод числа появлений каждого из слов
 {
+	int print_num = 0;
+	int min = 0;
+	vector<pair<string, vector<int>>> buf_pair_vector;
 	ofstream fout("count.txt");
 	if (fout.is_open())
 	{
 		fout << "Данный текстовый файл содержит найденные члены рифмующихся пар и их количество появлений в тексте.\n\n" << endl;
-		fout << left << setw(20) << "Слово:" << "Число появлений в тексте:" << endl;
-		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
+
+		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++) //прохождение по map (каждая итерация - новый вектор слов к новому окончанию)
 		{
 			vector<pair<string, vector<int>>> pair_vector = iterator->second;
-			if (pair_vector.size() > 1)
+
+			if (pair_vector.size() > 1)  //выводим только те слова, которые составляют пары рифм (если одно слово в группе окончания - не выводим)
 			{
+				sort(pair_vector.begin(), pair_vector.end(), compare);
+				fout << "[Группа " << ++print_num << "]" << endl << endl;
+				fout << left << setw(20) << "Слово:" << "Число появлений в тексте:" << endl;
 				for (int i = 0; i < pair_vector.size(); i++)
 				{
 					fout << left << setw(20) << pair_vector[i].first << pair_vector[i].second.size() << endl;
 				}
+				fout << endl << endl;
 			}
 		}
 	}
 	fout.close();
 }
- 
+
 //void title()  //анонс назначения программы
 //{
 //	cout << endl << endl << endl << setw(12) << " " << "ПРОГРАММА ДЛЯ ФОРМИРОВАНИЯ РИФМОВАННЫХ ПАР ГЛАГОЛОВ" << endl << endl << endl << endl << endl;
