@@ -5,6 +5,7 @@
 #include <fstream>
 #include <Windows.h>
 #include <iomanip>
+#include <conio.h>
 using namespace std;
 
 vector<int> vowels = { 'а','о','я','е','ё','и','у','ы','ю','э'};
@@ -259,7 +260,7 @@ void count_syllables(string word, string ending) //Функция подсчёт
 
 	if (syllables_to_words.find(pair<int, string>(count_syllables, ending)) == syllables_to_words.end()) //если ключа еще нет в мапе
 	{
-		syllables_to_words.insert(pair<pair<int,string>, vector<string>>(pair<int, string>(count_syllables, ending), {word})); // создаём ключ и пустой вектор
+		syllables_to_words.insert(pair<pair<int,string>, vector<string>>(pair<int, string>(count_syllables, ending), {word})); // создаём ключ и слово в вектор
 	}
 	else //если ключ есть в мапе
 	{
@@ -267,6 +268,7 @@ void count_syllables(string word, string ending) //Функция подсчёт
 	}
 }
 
+//нахождение индекса элемента в векторе
 int find_element_in_vector_pair(vector<pair<string, vector<int>>> pair_vector, string word)
 {
 	for (int i = 0; i < pair_vector.size(); i++)
@@ -278,7 +280,7 @@ int find_element_in_vector_pair(vector<pair<string, vector<int>>> pair_vector, s
 	}
 	return -1;
 }
-
+//имеется ли элемент в векторе пар
 bool is_element_in_vector_pair(vector<pair<string, vector<int>>> pair_vector, string word)
 {
 	for (int i = 0; i < pair_vector.size(); i++)
@@ -307,8 +309,7 @@ void parse_text()   //функция поиска и добавления гла
 				{
 					if (current_word.substr(current_word.size() - current_key.size()) == current_key)  //проверка совпадения окончания с ключом
 					{
-						if ((is_element_in_vector_pair(endings[current_key], current_word) == false) 
-							&& (find(exceptions.begin(), exceptions.end(), current_word) == exceptions.end()))  //Проверка на дубликаты и исключения
+						if ((is_element_in_vector_pair(endings[current_key], current_word) == false) && (find(exceptions.begin(), exceptions.end(), current_word) == exceptions.end()))  //Проверка на дубликаты и исключения
 						{
 							endings[current_key].push_back(pair<string, vector<int>>(current_word, {i + 1}));
 							count_syllables(current_word, current_key); //подсчёт слогов текущего слова
@@ -325,13 +326,13 @@ void parse_text()   //функция поиска и добавления гла
 	}
 }
 
-void print_examples_in_text(vector<int> examples_int_text, ofstream& fout) //вывод номеров предложений
+void print_examples_in_text(vector<int> examples_in_text, ofstream& fout) //вывод номеров предложений
 {
 	fout << " [";
-    for (int i = 0; i < examples_int_text.size(); i++)
+    for (int i = 0; i < examples_in_text.size(); i++)
     {
-        fout << examples_int_text[i]; //выводим номер предложения
-        if (i < examples_int_text.size() - 1)
+        fout << examples_in_text[i]; //выводим номер предложения
+        if (i < examples_in_text.size() - 1)
         {
             fout << ", "; //добавляем запятую, если это не последний номер
         }
@@ -391,6 +392,7 @@ void rhyme()  //вывод рифмы в файл
 		fout << "Данный текстовый файл содержит найденные рифмованные пары." << endl
 			<< "В квадратных скобках справа от найденного члена пары записываются номера предложений, в которых он встречается." << endl
 			<< "Рифмующиеся пары записаны в группы и разделены по количеству слогов.\n\n"<< endl;
+
 		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)
 		{
 			vector<pair<string, vector<int>>> current_vector = iterator->second;
@@ -483,4 +485,5 @@ int main()
 	count_words();
 	print_numbered_sentences();
 	//print_message();
+	int c = _getch();
 }
