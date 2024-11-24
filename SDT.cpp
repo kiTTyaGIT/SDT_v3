@@ -457,7 +457,7 @@ void count_words()  //вывод числа появлений каждого и
 
 			if (ending_words.size() > 1)  //выводим только те слова, которые составляют пары рифм (если одно слово в группе окончания - не выводим)
 			{
-				sort(ending_words.begin(), ending_words.end(), compare);   //сортировка
+				sort(ending_words.begin(), ending_words.end(), compare);  //сортировка
 				fout << "[Группа " << ++print_num << "]" << endl << endl;
 				fout << left << setw(20) << "Слово:" << "Число появлений в тексте:" << endl;
 				for (int i = 0; i < ending_words.size(); i++)
@@ -501,12 +501,15 @@ int main()
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
 	print_message();
+	//title();
 	system("pause");
 	initialize_map();  //загрузка слов в словарь из файла
 	initialize_exceptions(); //загрузка исключений из файла
+	//parse_sentences_to_process();
 	parse_sentences();
 	parse_text();
 	rhyme();
 	count_words();
 	print_numbered_sentences();
+	//print_message();
 }
