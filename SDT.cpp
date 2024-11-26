@@ -8,16 +8,26 @@
 #include <conio.h>
 using namespace std;
 
-vector<int> vowels = { 'а','о','я','е','ё','и','у','ы','ю','э'};
-vector<vector<string>> sentences = {};
-vector<string> exceptions;
-map<string, vector<pair<string, vector<int>>>> endings;
-map<pair<int, string>, vector<string>> syllables_to_words; // ключ - кол-во слогов + окончание, значение - вектор слов
+vector<int> vowels = { 'а','о','я','е','ё','и','у','ы','ю','э'}; //гласные русского алфавита
+vector<vector<string>> sentences = {}; //вектор типа строкового вектора - где i элемент = номер предложения, а строковый вектор = предложение (каждый элемент вектора - слово)
+vector<string> exceptions; //вектор слов исключений
+map<string, vector<pair<string, vector<int>>>> endings; //словарь окончаний: ключ - окончание; значение = слово + вектор предложений, в которых встретилось слово
+map<pair<int, string>, vector<string>> syllables_to_words; //словарь слогов слов: ключ = кол-во слогов + окончание; значение - вектор слов
 
-void initialize_map()   //загрузка слов в словарь из файла
+//входные файлы
+string const input_endings_file_name = "endings.txt";
+string const input_exception_file_name = "exceptions.txt";
+string const input_datafile_name = "text.txt";
+
+//выходные файлы
+string const rhyme_file_name = "rhyme.txt";
+string const count_file_name = "count.txt";
+string const numbered_text_file_name = "numbered_text.txt";
+
+///функция загрузки слов в словарь окончаний <endings> из файла 
+void initialize_map()
 {
-
-	ifstream in("endings.txt");
+	ifstream in(input_endings_file_name);
 	string line;
 	if (in.is_open())
 	{
@@ -29,10 +39,11 @@ void initialize_map()   //загрузка слов в словарь из фа�
 	in.close();
 }
 
-void initialize_exceptions()  //загрузка исключений из файла
+///функция загрузки списка исключений из файла
+void initialize_exceptions() 
 {
 	string line = "";
-	ifstream in("exceptions.txt");
+	ifstream in(input_exception_file_name);
 
 	if (in.is_open())
 	{
@@ -44,16 +55,17 @@ void initialize_exceptions()  //загрузка исключений из фа�
 	in.close();
 }
 
-string to_lower_case_and_plain_word(string str)  //функция понижения заглавной буквы
+///функция понижения заглавной буквы
+string to_lower_case_and_plain_word(string str) 
 {
 	for (int i = 0; i < str.length(); i++)
 	{
-		str[i] = tolower(str[i]);  //понизить регистр
+		str[i] = tolower(str[i]);
 	}
-
 
 	if (str.size() > 1)
 	{
+		// от -64 до -1 - русский алфавит (заглавные и строчные), -88 и -72 - бува Ё и ё
 		if (!(((str[0] >= -64) && (str[0] <= -33)) || ((str[0] >= -32) && (str[0] <= -1)) || (str[0] == -88) || (str[0] == -72))) // если первый элемент строки не буква
 		{
 			str = str.substr(1, str.size());
@@ -66,9 +78,10 @@ string to_lower_case_and_plain_word(string str)  //функция понижен
 	return str;
 }
 
-bool open_file(string& filename, ifstream& in)  //проверка файла на наличие и пустоту
+///функция проверки файла на его наличие и пустоту
+bool open_file(string& filename, ifstream& in)
 {
-	bool f = true;
+	bool f = true; //флаг для продолжения проверки пока ошибки не будут исправлены
 	do
 	{
 		f = true;
@@ -76,7 +89,7 @@ bool open_file(string& filename, ifstream& in)  //проверка файла н
 
 		if (!in.is_open())  //проверка на открытие
 		{
-			cout << endl << endl << "Ошибка! Файл не найден. Проверьте нахождение файла <text.txt> в папке с программой." << endl << endl << endl;
+			cout << endl << endl << "Ошибка открытия файла – отсутствует входной файл. Проверьте нахождение файла <" << input_datafile_name << "> в текущем каталоге." << endl << endl << endl;
 			f = false;
 			system("pause");
 			continue;
@@ -84,7 +97,7 @@ bool open_file(string& filename, ifstream& in)  //проверка файла н
 
 		if (in.peek() == -1)  //проверка файла на пустоту 
 		{
-			cout << endl << endl << "Ошибка! Файл пустой. Проверьте наличие текста в файле <text.txt>" << endl << endl << endl;
+			cout << endl << endl << "Ошибка открытия файла – входной файл пустой. Проверьте наличие текста в файле <" << input_datafile_name << ">" << endl << endl << endl;
 			f = false;
 			in.close();
 			system("pause");
@@ -99,11 +112,12 @@ bool open_file(string& filename, ifstream& in)  //проверка файла н
 	
 }
 
-void parse_sentences()   //разделение текста на предложения
+///функция разбивания поступающего текста по предложениям
+void parse_sentences()
 {
 	string line;
-	string word = "";
-	string filename = "text.txt";
+	string word = ""; //для побуквенной записи текущего слова
+	string filename = input_datafile_name;
 	ifstream in;
 	bool quote_is_open = false; //флаг открытия кавычек
 	vector<string> current_sentence;
@@ -153,12 +167,12 @@ void parse_sentences()   //разделение текста на предлож
 						}
 						word = "";
 					}
+
 					else
 					{
 						word += line[i];
 					}
 				}
-
 
 				else   //если встретился завершающий знак
 				{
@@ -205,7 +219,6 @@ void parse_sentences()   //разделение текста на предлож
 						}
 					}
 
-
 					word += line[i];
 					current_sentence.push_back(word);
 					sentences.push_back(current_sentence);
@@ -218,12 +231,13 @@ void parse_sentences()   //разделение текста на предлож
 	in.close();
 }
 
-void print_numbered_sentences() //запись в файл пронумерованных предложений
+///функция вывода нумерованных предложений в файл
+void print_numbered_sentences()
 {
-	ofstream fout("numbered_text.txt");
+	ofstream fout(numbered_text_file_name);
 	if (fout.is_open())
 	{
-		fout << "Данный файл содержит упорядоченные предложения входного файла <text.txt>.\n\n" << endl;
+		fout << "Данный файл содержит упорядоченные предложения входного файла <" << input_datafile_name << ">\n\n" << endl;
 		for (int i = 0; i < sentences.size(); i++)
 		{
 			fout << "(" << i + 1 << ")";
@@ -239,15 +253,14 @@ void print_numbered_sentences() //запись в файл пронумеров�
 				{
 					fout << current_sentence[j] << " ";
 				}
-				
 			}
 		}
 	}
-
 	fout.close();
 }
 
-void count_syllables(string word, string ending) //Функция подсчёта слогов в слове
+///функция подсчёта количества слогов в слове
+void count_syllables(string word, string ending)
 {
 	int count_syllables = 0;
 	for (int i = 0; i < word.size(); i++)
@@ -258,9 +271,9 @@ void count_syllables(string word, string ending) //Функция подсчёт
 		}
 	}
 
-	if (syllables_to_words.find(pair<int, string>(count_syllables, ending)) == syllables_to_words.end()) //если ключа еще нет в мапе
+	if (syllables_to_words.find(pair<int, string>(count_syllables, ending)) == syllables_to_words.end()) //если ключа еще нет в словааре окончаний
 	{
-		syllables_to_words.insert(pair<pair<int,string>, vector<string>>(pair<int, string>(count_syllables, ending), {word})); // создаём ключ и слово в вектор
+		syllables_to_words.insert(pair<pair<int,string>, vector<string>>(pair<int, string>(count_syllables, ending), {word})); //создаём ключ и слово в вектор
 	}
 	else //если ключ есть в мапе
 	{
@@ -268,7 +281,7 @@ void count_syllables(string word, string ending) //Функция подсчёт
 	}
 }
 
-//нахождение индекса элемента в векторе
+///функция нахождения индекса элемента в векторе
 int find_element_in_vector_pair(vector<pair<string, vector<int>>> pair_vector, string word)
 {
 	for (int i = 0; i < pair_vector.size(); i++)
@@ -280,7 +293,8 @@ int find_element_in_vector_pair(vector<pair<string, vector<int>>> pair_vector, s
 	}
 	return -1;
 }
-//имеется ли элемент в векторе пар
+
+///функция проверки наличия элемента в векторе пар
 bool is_element_in_vector_pair(vector<pair<string, vector<int>>> pair_vector, string word)
 {
 	for (int i = 0; i < pair_vector.size(); i++)
@@ -293,7 +307,8 @@ bool is_element_in_vector_pair(vector<pair<string, vector<int>>> pair_vector, st
 	return false;
 }
 
-void parse_text()   //функция поиска и добавления глаголов в map (словарь)
+///функция поиска и добавления глаголов в словарь окончаний
+void parse_text()
 {
 	for (int i = 0; i < sentences.size(); i++)
 	{
@@ -326,7 +341,8 @@ void parse_text()   //функция поиска и добавления гла
 	}
 }
 
-void print_examples_in_text(vector<int> examples_in_text, ofstream& fout) //вывод номеров предложений
+///функция вывода номеров предложений
+void print_examples_in_text(vector<int> examples_in_text, ofstream& fout)
 {
 	fout << " [";
     for (int i = 0; i < examples_in_text.size(); i++)
@@ -337,18 +353,19 @@ void print_examples_in_text(vector<int> examples_in_text, ofstream& fout) //вы
             fout << ", "; //добавляем запятую, если это не последний номер
         }
     }
-    fout << "]";
+    fout << "]"; 
 }
 
-int print_words_according_to_syllables(string ending, ofstream& fout, int print_num)  //функция вывода с текущим окончанием
+///функция вывода рифмованных пар по окончанию и количеству слогов
+int print_words_according_to_syllables(string ending, ofstream& fout, int print_num)
 {
-	bool is_start = true;
+	bool is_start = true; //флаг начала запаси новой группы слов текущего окончания
 	for (auto iterator = syllables_to_words.begin(); iterator != syllables_to_words.end(); iterator++)
 	{
-		int current_number_of_syllables = iterator->first.first; // получили количество слогов
-		string current_ending = iterator->first.second; // получили окончание
+		int current_number_of_syllables = iterator->first.first; //текущее количество слогов
+		string current_ending = iterator->first.second; //текущее окончание
 		vector<string> current_words = iterator->second;
-		if (current_ending == ending) // если совпало с переданным окончанием, выводим
+		if (current_ending == ending) //если совпало с переданным окончанием - выводим
 		{
 			if (is_start == true)
 			{
@@ -363,8 +380,8 @@ int print_words_according_to_syllables(string ending, ofstream& fout, int print_
 				if (i == current_words.size() - 1)
 				{
 					fout << current_words[i];
-					int index = find_element_in_vector_pair(endings[ending], current_words[i]);
-					print_examples_in_text(endings[ending][index].second, fout);
+					int index = find_element_in_vector_pair(endings[ending], current_words[i]); //нахождения индекса текущего слова в векторе окончаний
+					print_examples_in_text(endings[ending][index].second, fout); //вывод номеров предложений по найденному индексу
 					fout << endl;
 				}
 				else
@@ -381,12 +398,12 @@ int print_words_according_to_syllables(string ending, ofstream& fout, int print_
 	return print_num;
 }
 
-
-void rhyme()  //вывод рифмы в файл
+///внешняя функция вывода рифмованных пар в файл
+void rhyme()
 {
 	int i = 0;
-	int total_count = 0;  //переменная для хранения итогового количества элементов в векторах
-	ofstream fout("rhyme.txt");
+	int total_count = 0; //общее количество сочетаний всех рифмующихся пар
+	ofstream fout(rhyme_file_name);
 	if (fout.is_open())
 	{
 		fout << "Данный текстовый файл содержит найденные рифмованные пары." << endl
@@ -410,45 +427,24 @@ void rhyme()  //вывод рифмы в файл
 				
 			}
 		}
-		
+
 		fout << endl;
-		fout << endl << "Общее число найденных рифмующихся пар: " << total_count << endl; //вывод итогового количества сочетаний для всех окончаний
+		fout << endl << "Общее число найденных рифмующихся пар: " << total_count << endl;
 	}
 	fout.close();
 }
 
-//void count_words()  //вывод числа появлений каждого из слов
-//{
-//	ofstream fout("count.txt");
-//	if (fout.is_open())
-//	{
-//		fout << "Данный текстовый файл содержит найденные члены рифмующихся пар и их количество появлений в тексте.\n\n" << endl;
-//		fout << left << setw(20) << "Слово:" << "Число появлений в тексте:" << endl;
-//		for (auto iterator = endings.begin(); iterator != endings.end(); iterator++)  //прохождение по map (каждая итерация - новый вектор слов к новому окончанию)
-//		{
-//			vector<pair<string, vector<int>>> pair_vector = iterator->second;
-//		
-//			if (pair_vector.size() > 1)  //выводим только те слова, которые составляют пары рифм (если одно слово в группе окончания - не выводим)
-//			{
-				/*for (int i = 0; i < pair_vector.size(); i++)
-				{
-					fout << left << setw(20) << pair_vector[i].first << pair_vector[i].second.size() << endl;
-				}*/
-//			}
-//		}
-//	}
-//	fout.close();
-//}
- 
-bool compare(pair < string, vector<int>> a, pair < string, vector<int>> b)  //функция, определяющая логику сортировки
+///функция, определяющая логику сортировки
+bool compare(pair < string, vector<int>> a, pair < string, vector<int>> b)
 {
 	return a.second.size() < b.second.size();  //сортировка по возрастанию
 }
 
-void count_words()  //вывод числа появлений каждого из слов
+///функция вывода слова и числа его появлений в тексте
+void count_words()
 {
 	int print_num = 0;
-	ofstream fout("count.txt");
+	ofstream fout(count_file_name);
 	if (fout.is_open())
 	{
 		fout << "Данный текстовый файл содержит найденные члены рифмующихся пар и их количество появлений в тексте.\n\n" << endl;
@@ -473,17 +469,7 @@ void count_words()  //вывод числа появлений каждого и
 	fout.close();
 }
 
-//void print_message()
-//{
-//	cout << "Здравствуйте! Вы запустили программу, которая ищет однородные рифмы из текстового файла." << endl;
-//	cout << "- На вход программы подается текстовый файл <text.txt> на русском языке из текущего каталога;" << endl;
-//	cout << "- Упорядоченные предложения текстового файла записываются в файл <numbered_text.txt> в текущем каталоге;" << endl;
-//	cout << "- Часть речи, к которой относятся слова в рифмующихся парах -  глагол;" << endl;
-//	cout << "- Найденные рифмованные пары из поступающего текста записываются в файл <rhyme.txt> текущего каталога;" << endl;
-//	cout << "  В квадратных скобках справа от найденного члена пары записываются номера предложений, в которых он встречается; " << endl;
-//	cout << "- Количество появлений каждого из слов, найденных в роли члена пары, содержатся в файле <count.txt> текущего каталога;" << endl;
-//}
-
+///функция вывода приветственной информации пользователю
 void print_message()
 {
 	cout << "Здравствуйте! Вы запустили программу, которая ищет однородные рифмы из текстового файла.\n";
@@ -492,28 +478,23 @@ void print_message()
 	cout << " <numbered_text.txt> - выходной файл, содержащий пронумерованные предложения входного файла;" << endl;
 	cout << " <rhyme.txt> - выходной файл, содержащий найденные рифмованные пары;" << endl;
 	cout << " <count.txt> - выходной файл, содержащий найденные члены рифмующихся пар и количество появлений каждого из слов." << endl << endl;
-	//cout << "\nПримечание: В текстовом файле <rhyme.txt> в квадратных скобках справа от найденного члена пары записываются номера предложений, в которых он встречается; " << endl << endl;
 	cout << "\nОбратите внимание, что при повторном запуске программы существующие текстовые файлы будут перезаписаны! " << endl << endl << endl;
-
 }
 
 int main()
 {
-	//комментарий
 	setlocale(LC_ALL, "");
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
-	print_message();
-	//title();
+
+	print_message(); //приветственная информация	
 	system("pause");
 	initialize_map();  //загрузка слов в словарь из файла
 	initialize_exceptions(); //загрузка исключений из файла
-	//parse_sentences_to_process();
-	parse_sentences();
-	parse_text();
-	rhyme();
-	count_words();
-	print_numbered_sentences();
-	//print_message();
-	int c = _getch();
+	parse_sentences(); //разбивание текста по предложениям
+	parse_text(); //поиск и добавления глаголов в словарь
+	rhyme(); //вывод рифмованных пар в файл <rhyme.txt>
+	count_words(); //вывод слов и числа его появлений в тексте в файл <count.txt>
+	print_numbered_sentences(); //функция вывода нумерованных предложений в файл
+	int c = _getch(); //чтобы не закрывался exe-файл
 }
